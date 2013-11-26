@@ -9,36 +9,46 @@
 
     <script>
       window.onload = function(){
+        var FRAMERATE = 22;
 
         var points = [];
+        var scrolls = [];
         var record = true;
-        var date = new Date();
-        var last = date.getSeconds() * 1000 + date.getMilliseconds();
-
-        console.log("Hey there");
 
         document.onmousemove = function(event){
           if(record && event.pageX && event.pageY){
-            points.push([event.pageX, event.pageY]);
-            console.log(points.length);
+            points.push({
+              x: event.pageX,
+              y: event.pageY,
+              time: currentMillis()
+            });
+            record = false;
           }
         };
 
-        console.log("Done");
-
         var i = setInterval(function(){
           record = true;
-        }, 50);
+        }, FRAMERATE);
 
-        document.onclick = function(){
+        var currentMillis = function(){
+          var d = new Date();
+          var sum = 0;
+          sum += d.getHours() * 60 * 60 * 1000; // Hour to millis
+          sum += d.getMinutes() * 60 * 1000; // Mins to millis
+          sum += d.getSeconds() * 1000; // Seconds to millis
+          sum += d.getMilliseconds(); // Milliseconds
+          return sum;
+        };
+
+        var drawPoints = function(pts){
           var html = "";
-          for(i in points){
-            var p = points[i];
+          for(i in pts){
+            var p = pts[i];
             html += [
             "<div style='position:absolute; left:",
-            p[0],
+            p.x,
             "px; top:",
-            p[1],
+            p.y,
             "px; width: 10px; height: 10px; background-color: black;'>",
             "</div>"
             ].join("");
@@ -46,7 +56,42 @@
           document.body.innerHTML = html;
         };
 
-      }
+        var tracePath = function(pts){
+          var pos_x = pts[0].x, pos_y = pts[0].y;
+          var cursor = document.createElement("div");
+          cursor.style.width = "15px";
+          cursor.style.height = "15px";
+          cursor.style.backgroundColor = "#ff0000";
+          cursor.style.position = "absolute";
+          cursor.style.left = pos_x + "px";
+          cursor.style.top= pos_y + "px";
+          document.body.appendChild(cursor);
+
+          var i = 0, start = currentMillis();
+          var interval = setInterval(function(){
+            if(i < pts.length && currentMillis() - start >= pts[i].time - pts[0].time){
+              pos_x = pts[i].x;
+              pos_y = pts[i].y;
+              i++;
+            }
+            cursor.style.left = pos_x + "px";
+            cursor.style.top = pos_y + "px";
+          }, FRAMERATE);
+
+          setTimeout(function(){
+            clearInterval(interval);
+            cursor.parentNode.removeChild(cursor);
+          }, pts[pts.length - 1].time - pts[0].time);
+        };
+
+        document.onclick = function(){
+          tracePath(points);
+          points = [];
+        };
+
+
+      };
+
     </script>
 
   </body>
